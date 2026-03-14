@@ -11,7 +11,27 @@ def get_db():
 
 @app.route("/")
 def dashboard():
-    return render_template("dashboard.html")
+
+    conn = get_db()
+
+    total_est = conn.execute(
+        "SELECT COUNT(*) FROM Establishment"
+    ).fetchone()[0]
+
+    total_act = conn.execute(
+        "SELECT COUNT(*) FROM Activity_Data"
+    ).fetchone()[0]
+
+    total_em = conn.execute(
+        "SELECT COUNT(*) FROM Emission_Record"
+    ).fetchone()[0]
+
+    return render_template(
+        "dashboard.html",
+        total_est=total_est,
+        total_act=total_act,
+        total_em=total_em
+    )
 
 
 @app.route("/add_entity", methods=["GET","POST"])
@@ -95,7 +115,34 @@ def add_activity():
 
 @app.route("/emissions")
 def emissions():
-    return render_template("emissions.html")
+
+    conn = get_db()
+
+    rows = conn.execute("""
+    SELECT
+      e.est_name,
+      s.source_name,
+      s.unit,
+      ad.quantity,
+      ef.factor_value,
+      er.emission_kg
+
+    FROM Emission_Record er
+
+    JOIN Activity_Data ad
+    ON er.activity_id = ad.activity_id
+
+    JOIN Establishment e
+    ON ad.est_id = e.est_id
+
+    JOIN Emission_Source s
+    ON ad.source_id = s.source_id
+
+    JOIN Emission_Factor ef
+    ON s.source_id = ef.source_id
+    """).fetchall()
+
+    return render_template("emissions.html", rows=rows)
 
 
 @app.route("/report")
@@ -105,15 +152,14 @@ def report():
 
     rows = conn.execute("""
     SELECT
-        e.est_name,
+    e.est_name,
+    b.baseline_emission_kg,
+    a.allowed_emission_kg,
+    COALESCE(SUM(er.emission_kg),0) as actual_emission,
 
-        b.baseline_emission_kg,
+    (a.allowed_emission_kg - COALESCE(SUM(er.emission_kg),0))/1000.0 as carbon_credit
 
-        a.allowed_emission_kg,
-
-        SUM(er.emission_kg) as actual_emission,
-
-        (a.allowed_emission_kg - SUM(er.emission_kg)) as carbon_credit
+    
 
     FROM Establishment e
 
@@ -132,7 +178,31 @@ def report():
     GROUP BY e.est_id
     """).fetchall()
 
-    return render_template("report.html", rows=rows)
+
+    data = []
+
+    for r in rows:
+
+        credit = r["carbon_credit"]
+
+        if credit > 0:
+            status = "Surplus"
+        elif credit < 0:
+            status = "Deficit"
+        else:
+            status = "Neutral"
+
+        data.append({
+            "name": r["est_name"],
+            "baseline": r["baseline_emission_kg"],
+            "allowed": r["allowed_emission_kg"],
+            "actual": r["actual_emission"],
+            "credit": round(credit,2),
+            "status": status
+        })
+
+
+    return render_template("report.html", rows=data)
 
 
 if __name__ == "__main__":

@@ -8,26 +8,22 @@
 
 <tr>
 <th>Establishment</th>
-<th>Baseline Emission</th>
-<th>Allowed Limit</th>
-<th>Actual Emission</th>
-<th>Carbon Credit</th>
+<th>Baseline Emission (kg CO₂)</th>
+<th>Allowed Limit (kg CO₂)</th>
+<th>Actual Emission (kg CO₂)</th>
+<th>Carbon Credit (tCO₂e)</th>
+<th>Status</th>
 </tr>
 
 {% for r in rows %}
 
 <tr>
-
-<td>{{ r.est_name }}</td>
-
-<td>{{ r.baseline_emission_kg }}</td>
-
-<td>{{ r.allowed_emission_kg }}</td>
-
-<td>{{ r.actual_emission }}</td>
-
-<td>{{ r.carbon_credit }}</td>
-
+<td>{{ r.name }}</td>
+<td>{{ r.baseline }} kg</td>
+<td>{{ r.allowed }} kg</td>
+<td>{{ r.actual }} kg</td>
+<td>{{ r.credit }}</td>
+<td>{{ r.status }}</td>
 </tr>
 
 {% endfor %}

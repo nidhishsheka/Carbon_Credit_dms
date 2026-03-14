@@ -7,21 +7,23 @@
 <table>
 
 <tr>
-<th>Entity</th>
+<th>Establishment</th>
 <th>Source</th>
 <th>Quantity</th>
-<th>Factor</th>
-<th>Emission</th>
+<th>Emission Factor (kg CO₂ / unit)</th>
+<th>Emission (kg CO₂)</th>
 </tr>
 
-{% for row in records %}
+{% for r in rows %}
+
 <tr>
-<td>{{ row.entity_name }}</td>
-<td>{{ row.source_name }}</td>
-<td>{{ row.quantity }}</td>
-<td>{{ row.factor_value }}</td>
-<td>{{ row.emission }}</td>
+<td>{{ r.est_name }}</td>
+<td>{{ r.source_name }}</td>
+<td>{{ r.quantity }} {{ r.unit }}</td>
+<td>{{ r.factor_value }} kg CO₂ / {{ r.unit }}</td>
+<td>{{ r.emission_kg }} kg CO₂</td>
 </tr>
+
 {% endfor %}
 
 </table>
