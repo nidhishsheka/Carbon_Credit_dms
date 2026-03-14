@@ -37,24 +37,39 @@ def dashboard():
 @app.route("/add_entity", methods=["GET","POST"])
 def add_entity():
 
+    conn = get_db()
+    sectors = conn.execute(
+        "SELECT DISTINCT sector FROM Reduction_Policy"
+        ).fetchall()
+
     if request.method == "POST":
 
         name = request.form["entity_name"]
         est_type = request.form["entity_type"]
         location = request.form["location"]
 
-        conn = get_db()
+        baseline = request.form.get("baseline") or 9000
+        baseline_year = request.form.get("baseline_year") or 2024
+
+        
+
+        cursor = conn.execute(
+           "INSERT INTO Establishment (est_name, est_type, location) VALUES (?,?,?)",
+           (name, est_type, location)
+        )
+
+        est_id = cursor.lastrowid
 
         conn.execute(
-            "INSERT INTO Establishment (est_name, est_type, location) VALUES (?,?,?)",
-            (name, est_type, location)
-        )
+    "INSERT INTO Baseline_Emission (est_id, baseline_emission_kg, baseline_year) VALUES (?,?,?)",
+    (est_id, baseline, baseline_year)
+)
 
         conn.commit()
 
         return redirect("/")
 
-    return render_template("add_entity.html")
+    return render_template("add_entity.html", sectors=sectors)
 
 
 @app.route("/add_activity", methods=["GET","POST"])
@@ -152,30 +167,41 @@ def report():
 
     rows = conn.execute("""
     SELECT
-    e.est_name,
-    b.baseline_emission_kg,
-    a.allowed_emission_kg,
-    COALESCE(SUM(er.emission_kg),0) as actual_emission,
+ e.est_name,
+ e.est_type AS sector,
 
-    (a.allowed_emission_kg - COALESCE(SUM(er.emission_kg),0))/1000.0 as carbon_credit
+ COALESCE(b.baseline_emission_kg,0) AS baseline_emission_kg,
 
-    
+ COALESCE(rp.reduction_percent,0) AS reduction_percent,
 
-    FROM Establishment e
+ ROUND(COALESCE(SUM(er.emission_kg),0),2) AS actual_emission,
 
-    LEFT JOIN Baseline_Emission b
-    ON e.est_id = b.est_id
+ ROUND(COALESCE(b.baseline_emission_kg,0) *
+ (1 - COALESCE(rp.reduction_percent,0)/100.0),2) AS allowed_limit,
 
-    LEFT JOIN Allowed_Limit a
-    ON b.baseline_id = a.baseline_id
+ ROUND(
+ (
+ COALESCE(b.baseline_emission_kg,0) *
+ (1 - COALESCE(rp.reduction_percent,0)/100.0)
+ -
+ COALESCE(SUM(er.emission_kg),0)
+ )/1000.0,2) AS carbon_credit
 
-    LEFT JOIN Activity_Data ad
-    ON e.est_id = ad.est_id
+FROM Establishment e
 
-    LEFT JOIN Emission_Record er
-    ON ad.activity_id = er.activity_id
+LEFT JOIN Baseline_Emission b
+ON e.est_id = b.est_id
 
-    GROUP BY e.est_id
+LEFT JOIN Reduction_Policy rp
+ON e.est_type = rp.sector
+
+LEFT JOIN Activity_Data ad
+ON e.est_id = ad.est_id
+
+LEFT JOIN Emission_Record er
+ON ad.activity_id = er.activity_id
+
+GROUP BY e.est_id;
     """).fetchall()
 
 
@@ -183,7 +209,7 @@ def report():
 
     for r in rows:
 
-        credit = r["carbon_credit"]
+        credit = r["carbon_credit"] if r["carbon_credit"] is not None else 0
 
         if credit > 0:
             status = "Surplus"
@@ -193,13 +219,15 @@ def report():
             status = "Neutral"
 
         data.append({
-            "name": r["est_name"],
-            "baseline": r["baseline_emission_kg"],
-            "allowed": r["allowed_emission_kg"],
-            "actual": r["actual_emission"],
-            "credit": round(credit,2),
-            "status": status
-        })
+          "name": r["est_name"],
+          "sector": r["sector"],
+          "reduction": r["reduction_percent"] or 0,
+          "baseline": r["baseline_emission_kg"],
+          "allowed": r["allowed_limit"],
+          "actual": r["actual_emission"],
+          "credit": round(credit,2),
+          "status": status
+         })
 
 
     return render_template("report.html", rows=data)

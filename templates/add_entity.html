@@ -6,17 +6,47 @@
 
 <form method="POST">
 
+<div class="form-row">
+
+<div class="form-group">
 <label>Establishment Name</label>
 <input type="text" name="entity_name" required>
+</div>
 
+<div class="form-group">
 <label>Establishment Type</label>
-<input type="text" name="entity_type">
+<select name="entity_type" required>
+{% for s in sectors %}
+<option value="{{ s.sector }}">{{ s.sector }}</option>
+{% endfor %}
+</select>
+</div>
 
+<div class="form-group">
 <label>Location</label>
-<input type="text" name="location">
+<input type="text" name="location" required>
+</div>
+
+</div>
+
+
+<div class="form-row">
+
+<div class="form-group">
+<label>Baseline Emission (kg CO₂)</label>
+<input type="number" name="baseline" value="9000">
+</div>
+
+<div class="form-group">
+<label>Baseline Year</label>
+<input type="number" name="baseline_year" value="2024">
+</div>
+
+</div>
+
+<br>
 
 <button type="submit">Add Establishment</button>
 
 </form>
-
 {% endblock %}
