@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Add Activity Data</h2>
+
+<form method="POST">
+
+<label>Establishment</label>
+<select name="est_id">
+
+{% for e in establishments %}
+
+<option value="{{ e.est_id }}">
+{{ e.est_name }}
+</option>
+
+{% endfor %}
+
+</select>
+
+<label>Emission Source</label>
+<select name="source_id">
+
+{% for s in sources %}
+
+<option value="{{ s.source_id }}">
+{{ s.source_name }}
+</option>
+
+{% endfor %}
+
+</select>
+
+<label>Quantity</label>
+<input type="number" name="quantity" required>
+
+<label>Period</label>
+<input type="text" name="period" placeholder="2025" required>
+
+<button type="submit">Add Activity</button>
+
+</form>
+
+{% endblock %}

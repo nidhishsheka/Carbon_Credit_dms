@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Carbon Emission Management System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<header>
+    <h1>Carbon Emission Management System</h1>
+</header>
+
+<nav>
+    <a href="/">Dashboard</a>
+    <a href="/add_entity">Add Entity</a>
+    <a href="/add_activity">Add Activity</a>
+    <a href="/emissions">Emission Records</a>
+    <a href="/report">Carbon Credit Report</a>
+</nav>
+
+<div class="container">
+{% block content %}
+{% endblock %}
+</div>
+
+</body>
+</html>

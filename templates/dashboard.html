@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Dashboard</h2>
+
+<div class="cards">
+
+<div class="card">
+<h3>Total Entities</h3>
+<p>{{ entity_count }}</p>
+</div>
+
+<div class="card">
+<h3>Total Activities</h3>
+<p>{{ activity_count }}</p>
+</div>
+
+<div class="card">
+<h3>Total Emission Records</h3>
+<p>{{ emission_count }}</p>
+</div>
+
+</div>
+
+{% endblock %}
