@@ -12,7 +12,8 @@ def get_db():
 @app.route("/")
 def dashboard():
 
-    conn = get_db()
+    with sqlite3.connect("cc.db") as conn:
+        conn.row_factory = sqlite3.Row
 
     total_est = conn.execute(
         "SELECT COUNT(*) FROM Establishment"
@@ -37,7 +38,8 @@ def dashboard():
 @app.route("/add_entity", methods=["GET","POST"])
 def add_entity():
 
-    conn = get_db()
+    with sqlite3.connect("cc.db") as conn:
+        conn.row_factory = sqlite3.Row
     sectors = conn.execute(
         "SELECT DISTINCT sector FROM Reduction_Policy"
         ).fetchall()
@@ -75,7 +77,8 @@ def add_entity():
 @app.route("/add_activity", methods=["GET","POST"])
 def add_activity():
 
-    conn = get_db()
+    with sqlite3.connect("cc.db") as conn:
+        conn.row_factory = sqlite3.Row
 
     establishments = conn.execute(
         "SELECT * FROM Establishment"
@@ -131,7 +134,8 @@ def add_activity():
 @app.route("/emissions")
 def emissions():
 
-    conn = get_db()
+    with sqlite3.connect("cc.db") as conn:
+        conn.row_factory = sqlite3.Row
 
     rows = conn.execute("""
     SELECT
@@ -163,7 +167,8 @@ def emissions():
 @app.route("/report")
 def report():
 
-    conn = get_db()
+    with sqlite3.connect("cc.db") as conn:
+        conn.row_factory = sqlite3.Row
 
     rows = conn.execute("""
     SELECT
@@ -192,7 +197,7 @@ FROM Establishment e
 LEFT JOIN Baseline_Emission b
 ON e.est_id = b.est_id
 
-LEFT JOIN Reduction_Policy rp
+LEFT JOIN (SELECT DISTINCT sector, reduction_percent FROM Reduction_Policy) rp
 ON e.est_type = rp.sector
 
 LEFT JOIN Activity_Data ad
