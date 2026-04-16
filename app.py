@@ -35,8 +35,8 @@ def dashboard():
     )
 
 
-@app.route("/add_entity", methods=["GET","POST"])
-def add_entity():
+@app.route("/add_establishment", methods=["GET","POST"])
+def add_establishment():
 
     with sqlite3.connect("cc.db") as conn:
         conn.row_factory = sqlite3.Row
@@ -103,23 +103,6 @@ def add_activity():
 
         activity_id = cursor.lastrowid
 
-        # get emission factor
-        factor = conn.execute(
-            "SELECT factor_value FROM Emission_Factor WHERE source_id=?",
-            (source_id,)
-        ).fetchone()
-
-        factor_value = factor["factor_value"]
-
-        # calculate emission
-        emission = quantity * factor_value
-
-        # insert emission record
-        conn.execute(
-            "INSERT INTO Emission_Record (activity_id, emission_kg) VALUES (?,?)",
-            (activity_id, emission)
-        )
-
         conn.commit()
 
         return redirect("/emissions")
@@ -137,31 +120,43 @@ def emissions():
     with sqlite3.connect("cc.db") as conn:
         conn.row_factory = sqlite3.Row
 
-    rows = conn.execute("""
-    SELECT
-      e.est_name,
-      s.source_name,
-      s.unit,
-      ad.quantity,
-      ef.factor_value,
-      er.emission_kg
+        rows = conn.execute("""
+        SELECT
+          e.est_name,
+          s.source_name,
+          s.unit,
+          ad.quantity,
+          ef.factor_value,
+          er.emission_kg
 
-    FROM Emission_Record er
+        FROM Emission_Record er
 
-    JOIN Activity_Data ad
-    ON er.activity_id = ad.activity_id
+        JOIN Activity_Data ad
+        ON er.activity_id = ad.activity_id
 
-    JOIN Establishment e
-    ON ad.est_id = e.est_id
+        JOIN Establishment e
+        ON ad.est_id = e.est_id
 
-    JOIN Emission_Source s
-    ON ad.source_id = s.source_id
+        JOIN Emission_Source s
+        ON ad.source_id = s.source_id
 
-    JOIN Emission_Factor ef
-    ON s.source_id = ef.source_id
-    """).fetchall()
+        JOIN Emission_Factor ef
+        ON s.source_id = ef.source_id
+        """).fetchall()
 
-    return render_template("emissions.html", rows=rows)
+    clean_rows = []
+
+    for r in rows:
+        clean_rows.append({
+            "est_name": r["est_name"],
+            "source_name": r["source_name"],
+            "unit": r["unit"],
+            "quantity": r["quantity"],
+            "factor_value": r["factor_value"],
+            "emission_kg": round(r["emission_kg"], 2)
+        })
+
+    return render_template("emissions.html", rows=clean_rows)
 
 
 @app.route("/report")
@@ -170,44 +165,7 @@ def report():
     with sqlite3.connect("cc.db") as conn:
         conn.row_factory = sqlite3.Row
 
-    rows = conn.execute("""
-    SELECT
- e.est_name,
- e.est_type AS sector,
-
- COALESCE(b.baseline_emission_kg,0) AS baseline_emission_kg,
-
- COALESCE(rp.reduction_percent,0) AS reduction_percent,
-
- ROUND(COALESCE(SUM(er.emission_kg),0),2) AS actual_emission,
-
- ROUND(COALESCE(b.baseline_emission_kg,0) *
- (1 - COALESCE(rp.reduction_percent,0)/100.0),2) AS allowed_limit,
-
- ROUND(
- (
- COALESCE(b.baseline_emission_kg,0) *
- (1 - COALESCE(rp.reduction_percent,0)/100.0)
- -
- COALESCE(SUM(er.emission_kg),0)
- )/1000.0,2) AS carbon_credit
-
-FROM Establishment e
-
-LEFT JOIN Baseline_Emission b
-ON e.est_id = b.est_id
-
-LEFT JOIN (SELECT DISTINCT sector, reduction_percent FROM Reduction_Policy) rp
-ON e.est_type = rp.sector
-
-LEFT JOIN Activity_Data ad
-ON e.est_id = ad.est_id
-
-LEFT JOIN Emission_Record er
-ON ad.activity_id = er.activity_id
-
-GROUP BY e.est_id;
-    """).fetchall()
+    rows = conn.execute("SELECT * FROM Carbon_Report_View").fetchall()
 
 
     data = []
