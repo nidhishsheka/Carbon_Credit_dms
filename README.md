@@ -6,6 +6,7 @@ The system records emission-producing activities, computes emissions using emiss
 
 ---
 
+
 ## Features
 
 - Add and manage establishments
