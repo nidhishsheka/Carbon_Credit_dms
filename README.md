@@ -155,8 +155,8 @@ http://127.0.0.1:5000
 ## Purpose
 
 This project was developed as part of a **Database Management Systems (DBMS) course project** to demonstrate:
-
 - ER modeling
 - relational database implementation
 - SQL joins and derived calculations
 - integration of databases with a web interface
+
